@@ -5,6 +5,7 @@ import connectDB from "./config/db";
 import authRoute from "./routes/auth";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import Message from "./models/Message";
 
 dotenv.config();
 const app = express();
@@ -27,10 +28,16 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log("เข้ามา", socket.id);
 
+  socket.on("sendMessage", (message: string) => {
+    console.log(message);
+    io.emit("receiveMessage", message);
+  });
+
   socket.on("disconnect", () => {
     console.log("ออกไป", socket.id);
   });
 });
 
-
-server.listen(port, () => console.log(`Example app listening on port ${port}!`));
+server.listen(port, () =>
+  console.log(`Example app listening on port ${port}!`),
+);
