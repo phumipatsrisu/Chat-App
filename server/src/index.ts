@@ -5,7 +5,7 @@ import connectDB from "./config/db";
 import authRoute from "./routes/auth";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import Message from "./models/Message";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 const app = express();
@@ -25,12 +25,30 @@ app.get("/", (req, res) => {
   res.send("hello world!");
 });
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    next(new Error("No token provided"));
+    return;
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+    socket.data.user = decoded.user;
+    next();
+  } catch (error) {
+    next(new Error("Token invalid"));
+  }
+});
+
 io.on("connection", (socket) => {
   console.log("เข้ามา", socket.id);
 
   socket.on("sendMessage", (message: string) => {
     console.log(message);
-    io.emit("receiveMessage", message);
+    io.emit("receiveMessage", {
+      content: message,
+      sender: socket.data.user.name,
+    });
   });
 
   socket.on("disconnect", () => {
